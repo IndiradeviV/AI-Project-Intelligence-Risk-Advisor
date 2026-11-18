@@ -1,0 +1,63 @@
+# AI Project Intelligence & Risk Advisor
+## Project Plan and Current Status
+
+### 1. Project Overview
+The AI Project Intelligence & Risk Advisor is a Python-based application designed to analyze project documents and help teams understand project scope, identify risks, track blockers, and generate useful project insights.
+
+The application uses Streamlit for the user interface, ChromaDB for vector storage, a sentence-transformer embedding model for semantic retrieval, and a Groq-hosted language model for AI analysis.
+
+### 2. Project Goals
+- Extract project goals, deliverables, milestones, timelines, and responsibilities from project documents.
+- Detect project risks and delivery challenges using retrieved document evidence.
+- Identify blockers, dependencies, and action items.
+- Generate project documentation such as risk registers and action-item summaries.
+- Provide project health insights through a conversational assistant and dashboard.
+
+### 3. Planned Deliverables
+- Document ingestion and knowledge-base management.
+- Retrieval-Augmented Generation (RAG) pipeline.
+- Scope and Deliverable Extraction Agent.
+- Risk Detection and Delivery Forecasting Agent.
+- Blocker and Action Item Identification Agent.
+- Documentation Generation Agent.
+- Project Health Scoring Module.
+- Conversational Project Intelligence Assistant.
+- Project Insights and Risk Summary Dashboard.
+
+### 4. Milestone 1 — Completed
+The initial document ingestion and knowledge-base functionality has been implemented. The application can extract text from supported documents, split text into chunks, generate embeddings, store chunks in ChromaDB, and retrieve relevant chunks using semantic search.
+
+Automated tests for the document loader, chunker, embeddings, and ChromaDB components have passed.
+
+### 5. Milestone 2 — Current Work
+The current milestone focuses on developing the scope extraction, risk detection and delivery forecasting, and blocker/action-item identification capabilities.
+
+The Scope Extraction Agent has been implemented and successfully tested. The Risk Detection Agent has also been implemented and its standalone test returned structured risk analysis.
+
+### 6. Known Risks and Challenges
+- The risk analysis may retrieve documents belonging to unrelated projects if multiple projects share the same ChromaDB collection.
+- The accuracy of the analysis depends on the relevance and completeness of retrieved document chunks.
+- The language model may return invalid JSON, which can prevent structured results from being displayed.
+- Project risks may be missed when relevant information is absent from the retrieved chunks.
+- API service availability and rate limits may interrupt AI analysis.
+- Integrating additional agents into Streamlit may introduce runtime errors if exceptions are not handled correctly.
+
+### 7. Dependencies
+- Python virtual environment and required packages.
+- Streamlit application.
+- Sentence-transformer embedding model.
+- ChromaDB persistent storage.
+- Valid Groq API credentials stored locally in an environment file.
+- Relevant project documents successfully indexed in the knowledge base.
+
+### 8. Current Limitations
+The application currently retrieves chunks from a shared persistent ChromaDB collection. Project-specific filtering has not yet been implemented, so unrelated indexed documents can influence risk analysis.
+
+A reliable delivery forecast also requires sufficient project dates, task statuses, dependencies, and deadline information.
+
+### 9. Next Actions
+- Index a project-specific sample document and verify retrieval.
+- Validate the Risk Detection Agent against the intended project.
+- Implement the Blocker and Action Item Identification Agent.
+- Integrate the validated agents into the Streamlit interface.
+- Test the application using complete, incomplete, and unrelated project documents.

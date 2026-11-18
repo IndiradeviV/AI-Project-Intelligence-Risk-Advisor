@@ -163,5 +163,5 @@ Additional technical documentation is available in the `docs/` directory:
 
 ## Author
 
-Developed as an academic project for Milestone 1.
+Indira Devi V
 

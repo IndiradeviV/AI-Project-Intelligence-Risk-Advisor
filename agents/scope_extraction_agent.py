@@ -30,9 +30,10 @@ class ScopeExtractionAgent:
         query_embedding = self.embedding_model.embed_query(query)
 
         results = self.chroma_store.search(
-            query_embedding=query_embedding,
-            top_k=top_k
-        )
+    query_embedding=query_embedding,
+    top_k=top_k,
+    project_id="ai_project_intelligence_risk_advisor"
+)
 
         documents = results.get("documents", [])
         chunks = documents[0] if documents else []

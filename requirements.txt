@@ -8,3 +8,4 @@ langchain-text-splitters
 pytest
 groq
 python-dotenv
+plotly

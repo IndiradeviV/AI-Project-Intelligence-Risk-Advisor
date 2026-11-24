@@ -1,21 +1,9 @@
 
-from agents.scope_extraction_agent import ScopeExtractionAgent
-from agents.risk_detection_agent import RiskDetectionAgent
-from agents.blocker_action_agent import BlockerActionAgent
-
-
 class ProjectHealthAgent:
-    """Calculate project health using scope, timeline, and blockers."""
-
-    def __init__(self):
-        self.scope_agent = ScopeExtractionAgent()
-        self.risk_agent = RiskDetectionAgent()
-        self.blocker_agent = BlockerActionAgent()
+    """Calculate project health using existing agent results."""
 
     @staticmethod
     def calculate_scope_score(data):
-        """Calculate scope clarity based on documented project details."""
-
         fields = [
             "project_goals",
             "deliverables",
@@ -24,9 +12,7 @@ class ProjectHealthAgent:
             "responsibilities"
         ]
 
-        completed = sum(
-            1 for field in fields if data.get(field)
-        )
+        completed = sum(1 for field in fields if data.get(field))
 
         score = (completed / len(fields)) * 100
 
@@ -37,8 +23,6 @@ class ProjectHealthAgent:
 
     @staticmethod
     def calculate_timeline_score(data):
-        """Calculate timeline health using delivery forecast and risks."""
-
         forecast = data.get("delivery_forecast", {})
         status = str(forecast.get("status", "")).lower()
 
@@ -73,8 +57,6 @@ class ProjectHealthAgent:
 
     @staticmethod
     def calculate_blocker_score(data):
-        """Calculate blocker health based on the number of blockers."""
-
         blockers = data.get("blockers", [])
         count = len(blockers)
 
@@ -91,7 +73,6 @@ class ProjectHealthAgent:
 
     @staticmethod
     def get_health_status(score):
-
         if score >= 80:
             return "Healthy"
         elif score >= 60:
@@ -101,24 +82,13 @@ class ProjectHealthAgent:
         else:
             return "Critical"
 
-    def calculate_project_health(self):
-
-        # 1. Extract project scope
-        scope_result = self.scope_agent.extract_scope(
-            "Extract project goals, deliverables, milestones, "
-            "timelines, responsibilities, and missing information."
-        )
-
-        # 2. Analyze project risks
-        risk_result = self.risk_agent.detect_risks(
-            "Identify project schedule risks, delivery challenges, "
-            "risk likelihood, impact, and delivery forecast."
-        )
-
-        # 3. Identify project blockers
-        blocker_result = self.blocker_agent.identify_blockers(
-            "Identify all documented project blockers and unresolved dependencies."
-        )
+    def calculate_project_health(
+        self,
+        scope_result,
+        risk_result,
+        blocker_result
+    ):
+        """Calculate health from already-generated agent results."""
 
         results = [
             scope_result,
@@ -126,32 +96,43 @@ class ProjectHealthAgent:
             blocker_result
         ]
 
-        if any(result.get("status") != "success" for result in results):
+        if any(
+            not isinstance(result, dict)
+            or result.get("status") != "success"
+            for result in results
+        ):
             return {
                 "status": "incomplete",
                 "message": (
-                    "Unable to calculate complete project health. "
-                    "Check whether project documents are indexed "
-                    "and all three agents returned valid results."
+                    "Run Scope Analysis, Risk Analysis and "
+                    "Blocker Analysis successfully before "
+                    "calculating project health."
                 ),
-                "scope_status": scope_result.get("status"),
-                "risk_status": risk_result.get("status"),
-                "blocker_status": blocker_result.get("status")
+                "scope_status": (
+                    scope_result.get("status")
+                    if isinstance(scope_result, dict)
+                    else "missing"
+                ),
+                "risk_status": (
+                    risk_result.get("status")
+                    if isinstance(risk_result, dict)
+                    else "missing"
+                ),
+                "blocker_status": (
+                    blocker_result.get("status")
+                    if isinstance(blocker_result, dict)
+                    else "missing"
+                )
             }
 
-        # Extract agent results
         scope_data = scope_result.get("extracted_data", {})
         risk_data = risk_result.get("risk_analysis", {})
         blocker_data = blocker_result.get("blocker_analysis", {})
 
-        # Calculate individual scores
         scope_score = self.calculate_scope_score(scope_data)
-
         timeline_score = self.calculate_timeline_score(risk_data)
-
         blocker_score = self.calculate_blocker_score(blocker_data)
 
-        # Weighted overall health score
         overall_score = round(
             (scope_score * 0.35) +
             (timeline_score * 0.35) +

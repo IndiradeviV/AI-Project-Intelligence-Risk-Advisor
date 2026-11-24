@@ -1,3 +1,4 @@
+import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 import json
@@ -575,11 +576,15 @@ if selected_page == "Dashboard":
                 ),
                 "documentation_result"
             ),
-            (
-                "Project health assessment",
-                lambda: ProjectHealthAgent().calculate_project_health(),
-                "health_result"
-            )
+           (
+    "Project health assessment",
+    lambda: ProjectHealthAgent().calculate_project_health(
+        st.session_state.scope_result,
+        st.session_state.risk_result,
+        st.session_state.blocker_result
+    ),
+    "health_result"
+)
         ]
 
         completed = []
@@ -644,22 +649,108 @@ if selected_page == "Dashboard":
     with col4:
         st.metric("Deliverables", len(deliverables))
 
+    
     st.divider()
     st.subheader("Project Health Summary")
+
     if health_data:
         try:
             numeric_score = max(0.0, min(100.0, float(health_score)))
             st.progress(numeric_score / 100)
         except (TypeError, ValueError):
             st.info(f"Health score: {health_score}")
+
         st.caption(f"Health status: {health_status}")
+
         dimensions = health_data.get("dimension_scores", {})
+
         if isinstance(dimensions, dict) and dimensions:
+
+            # Display individual health scores
             dimension_cols = st.columns(len(dimensions))
-            for column, (dimension, value) in zip(dimension_cols, dimensions.items()):
-                column.metric(dimension.replace("_", " ").title(), value)
+
+            for column, (dimension, value) in zip(
+                dimension_cols, dimensions.items()
+            ):
+                column.metric(
+                    dimension.replace("_", " ").title(),
+                    value
+                )
+
+            # ==========================================
+            # PROJECT HEALTH RADAR CHART
+            # ==========================================
+
+            st.divider()
+            st.subheader("Project Health Radar Chart")
+
+            categories = [
+                "Scope Clarity",
+                "Timeline Health",
+                "Blocker Health"
+            ]
+
+            values = [
+                float(dimensions.get("scope_clarity", 0)),
+                float(dimensions.get("timeline_health", 0)),
+                float(dimensions.get("blocker_health", 0))
+            ]
+
+            # Close the radar chart
+            categories_closed = categories + [categories[0]]
+            values_closed = values + [values[0]]
+
+            fig = go.Figure()
+
+            fig.add_trace(
+                go.Scatterpolar(
+                    r=values_closed,
+                    theta=categories_closed,
+                    fill="toself",
+                    name="Project Health",
+                    line=dict(
+                        color="#54775B",
+                        width=3
+                    ),
+                    fillcolor="rgba(84, 119, 91, 0.25)"
+                )
+            )
+
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100],
+                        tickvals=[0, 20, 40, 60, 80, 100]
+                    )
+                ),
+                showlegend=False,
+                height=450,
+                paper_bgcolor="#F5F3EA",
+                font=dict(color="#263B32"),
+                margin=dict(
+                    l=50,
+                    r=50,
+                    t=40,
+                    b=40
+                )
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+        else:
+            st.info("Health dimension scores are not available.")
+
     else:
-        st.info("Project health is not available yet. Run the assessment from the Project Health page.")
+        st.info(
+            "Project health is not available yet. "
+            "Run the assessment from the Project Health page."
+        )
+
 
     st.divider()
     st.subheader("Project Risk Summary")
@@ -1298,6 +1389,7 @@ elif selected_page == "Documentation":
                 st.code(result["raw_response"])
 
 
+
 # =====================================================
 # PROJECT HEALTH PAGE
 # =====================================================
@@ -1319,16 +1411,45 @@ elif selected_page == "Project Health":
     if st.button("Run Health Assessment", type="primary"):
 
         try:
-            with st.spinner(
-                "Analyzing project scope, timeline and blockers..."
-            ):
-                agent = ProjectHealthAgent()
-                result = agent.calculate_project_health()
-                st.session_state.health_result = result
+            with st.spinner("Calculating project health..."):
+
+                # Get the previously generated agent results
+                scope_result = st.session_state.scope_result
+                risk_result = st.session_state.risk_result
+                blocker_result = st.session_state.blocker_result
+
+                # Check whether all three agents have completed successfully
+                if not scope_result or scope_result.get("status") != "success":
+                    st.warning(
+                        "Please run Scope Analysis before calculating project health."
+                    )
+
+                elif not risk_result or risk_result.get("status") != "success":
+                    st.warning(
+                        "Please run Risk Analysis before calculating project health."
+                    )
+
+                elif not blocker_result or blocker_result.get("status") != "success":
+                    st.warning(
+                        "Please run Blockers & Actions before calculating project health."
+                    )
+
+                else:
+                    # Calculate health using existing agent results
+                    agent = ProjectHealthAgent()
+
+                    result = agent.calculate_project_health(
+                        scope_result,
+                        risk_result,
+                        blocker_result
+                    )
+
+                    st.session_state.health_result = result
 
         except Exception as error:
             st.error(f"Health assessment failed: {error}")
 
+    # Display the previously calculated health result
     result = st.session_state.health_result
 
     if result:
@@ -1336,6 +1457,7 @@ elif selected_page == "Project Health":
         if result.get("status") == "success":
 
             st.success("Project health calculation completed.")
+
             display_health_report(result)
 
             st.download_button(
@@ -1353,7 +1475,10 @@ elif selected_page == "Project Health":
         elif result.get("status") == "incomplete":
 
             st.warning(
-                result.get("message", "Health assessment is incomplete.")
+                result.get(
+                    "message",
+                    "Health assessment is incomplete."
+                )
             )
 
             st.write("Agent execution status:")
@@ -1365,10 +1490,12 @@ elif selected_page == "Project Health":
             })
 
         else:
+
             st.error("Unable to calculate project health.")
 
             if result.get("raw_response"):
                 st.code(result["raw_response"])
+
 
 
 # =====================================================
